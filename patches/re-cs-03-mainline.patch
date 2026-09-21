@@ -641,7 +641,7 @@ index 0000000000..16d465448d
 +	status = "okay";
 +
 + 	assigned-clocks = <&uniphy0 UNIPHY_CLK_REF>;
-+ 	assigned-clock-rates = <UNIPHY_REFCLK_50MHZ>;
++ 	assigned-clock-rates = <UNIPHY_REFCLK_25MHZ>;
 +};
 +
 +&gmac0 {
