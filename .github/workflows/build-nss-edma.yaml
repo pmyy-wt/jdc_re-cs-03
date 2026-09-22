@@ -1,0 +1,211 @@
+name: Build OpenWrt for specific target and release
+
+permissions:
+  contents: write
+  actions: write
+
+on:
+  workflow_dispatch:
+  #push:
+  #schedule:
+  #  - cron: "0 2/3 * * *"
+
+env:
+  REMOTE_REPOSITORY: kuncy7/openwrt-nss-edma
+  REMOTE_BRANCH: c3po-tag-8021q
+  CONFIG_FILE: re-cs-03.config
+  CUSTOM_FILES_PATH: files/
+  RELEASE_PREFIX: main
+  NSS_PACKAGES_REPOSITORY: kuncy7/nss-packages
+  NSS_PACKAGES_REPOSITORY_BRANCH: ipq50xx-rebase
+
+jobs:
+  check_commits:
+    name: Check for new commits
+    runs-on: ubuntu-24.04
+    outputs:
+      new_commits: ${{ steps.check_commits.outputs.new_commits }}
+      latest_commit_sha: ${{ steps.check_commits.outputs.latest_commit_sha }}
+      nss_packages_repo_new_commits: ${{ steps.check_commits.outputs.nss_packages_repo_new_commits }}
+      nss_packages_repo_latest_commit_sha: ${{ steps.check_commits.outputs.nss_packages_repo_latest_commit_sha }}
+    steps:
+      - name: Check for new commits in both repositories
+        id: check_commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          latest_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${{ env.REMOTE_BRANCH }}" --jq .sha)
+          packages_sha=$(gh api "repos/${{ env.NSS_PACKAGES_REPOSITORY }}/commits/${{ env.NSS_PACKAGES_REPOSITORY_BRANCH }}" --jq .sha)
+          release_body=$(gh api "repos/${{ github.repository }}/releases/latest" --jq .body 2>/dev/null || echo "")
+
+          new_commits=$([[ "$release_body" == *"$latest_sha"* ]] && echo "false" || echo "true")
+          nss_new_commits=$([[ "$release_body" == *"$packages_sha"* ]] && echo "false" || echo "true")
+
+          echo "new_commits=$new_commits" >> "$GITHUB_OUTPUT"
+          echo "latest_commit_sha=$latest_sha" >> "$GITHUB_OUTPUT"
+          echo "nss_packages_repo_new_commits=$nss_new_commits" >> "$GITHUB_OUTPUT"
+          echo "nss_packages_repo_latest_commit_sha=$packages_sha" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build OpenWrt
+    needs: check_commits
+    if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true' || needs.check_commits.outputs.nss_packages_repo_new_commits == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev python3-setuptools rsync swig unzip zlib1g-dev file wget
+      - name: Checkout remote repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.REMOTE_REPOSITORY }}
+          ref: ${{ env.REMOTE_BRANCH }}
+
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          path: "builder_repo"
+          
+      - name: Add custom patches
+        run: |
+          df -hT
+          if [ -d "builder_repo/patches" ] && [ "$(ls -A builder_repo/patches 2>/dev/null)" ]; then
+            for patch in builder_repo/patches/*.patch; do
+              echo "Applying patch $patch ..."
+              ls -al "$patch" && sha256sum "$patch"
+              [ -f "$patch" ] && git apply --verbose "$patch"
+            done
+          fi
+            
+      - name: Update and install feeds
+        run: |
+          df -hT
+          #echo 'src-git custom https://github.com/kiddin9/kwrt-packages' >> feeds.conf.default
+          ./scripts/feeds update -a && ./scripts/feeds install -a -p luci && ./scripts/feeds install -a -p packages
+          git clone https://github.com/Openwrt-Passwall/openwrt-passwall.git package/feeds/luci/luci-app-passwall
+          git clone https://github.com/Openwrt-Passwall/openwrt-passwall2.git package/feeds/luci/luci-app-passwall2
+          git clone https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git package/utils/passwall2
+          git clone https://github.com/jerrykuku/luci-theme-argon.git package/feeds/luci/luci-theme-argon
+          git clone https://github.com/jerrykuku/luci-app-argon-config.git package/feeds/luci/luci-app-argon-config
+          #git clone https://github.com/dgyangxf/luci-app-vlmcsd.git package/feeds/luci/luci-app-vlmcsd
+          #git clone https://github.com/im-0/openwrt-package.vlmcsd.git package/utils/vlmcsd
+          #git clone https://github.com/sbwml/openwrt-qBittorrent package/feeds/qBittorrent
+          unzip builder_repo/luci-app-accesscontrol.zip -d package/feeds/luci/applications
+
+      - name: Setup configuration and custom files
+        run: |
+          df -hT
+          mv builder_repo/${{ env.CONFIG_FILE }} .config
+          make defconfig -j$(nproc)
+          mkdir -p ${{ env.CUSTOM_FILES_PATH }}
+          [ -d "builder_repo/${{ env.CUSTOM_FILES_PATH }}" ] && mv builder_repo/${{ env.CUSTOM_FILES_PATH }}* ${{ env.CUSTOM_FILES_PATH }} || true
+
+      - name: Use /mnt for more disk space
+        if: always()
+        run: |
+          sudo mkdir -p /mnt/upper /mnt/work && sudo chmod a+w /mnt/upper
+          sudo mount -t overlay -olowerdir=$(pwd),upperdir=/mnt/upper,workdir=/mnt/work overlay $(pwd) && df -hT
+
+      - name: Restore cache from previous build
+        uses: actions/cache@v4
+        if: false
+        with:
+          key: openwrt-build-${{ needs.check_commits.outputs.latest_commit_sha }}
+          restore-keys: |
+            openwrt-build
+          path: |
+            build_dir
+            dl
+            staging_dir
+            tmp
+
+      - name: Clean up old caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        if: false
+        run: |
+          gh api repos/${{ github.repository }}/actions/caches --paginate --jq '.actions_caches[0:] | .[] |.key' | while read key; do
+            echo "Removing old cache $key ..."
+            gh api -X DELETE "/repos/${{ github.repository }}/actions/caches?key=$key" 2>/dev/null || true
+          done
+
+      - name: Download packages
+        run: |
+          df -hT
+          ./scripts/feeds update -a
+          make download -j$(nproc)
+          
+      - name: Build firmware
+        env: 
+          CMAKE_POLICY_VERSION_MINIMUM: 3.5
+        run: |
+          df -hT
+          make check -j$(nproc) FIXUP=1 V=s IGNORE_ERRORS="n m"
+          make -j$(nproc) || make -j1 V=s  # Retry single-threaded on failure
+          tar cvzf bin/targets/qualcommax/ipq50xx/snapshots.tar.gz -C bin packages/aarch64_cortex-a53 targets/qualcommax/ipq50xx/packages
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipq50xx-images
+          path: bin/targets/qualcommax/ipq50xx
+
+      - name: Check disk space usage
+        if: always()
+        run: df -hT
+        
+  release:
+    name: Create release
+    needs: [check_commits, build]
+    if: needs.build.result == 'success' && false
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ipq50xx-images
+          path: firmware
+      - name: Set release date
+        run: echo "RELEASE_DATE=$(TZ='Asia/Shanghai' date +%F)" >> $GITHUB_ENV
+      - name: Publish release
+        uses: softprops/action-gh-release@master
+        with:
+          files: firmware/*
+          tag_name: ${{ env.RELEASE_PREFIX }}-${{ env.RELEASE_DATE }}
+          name: 🚀 OpenWrt Build Release ${{ env.RELEASE_DATE }}
+          body: |
+            ## 📦 OpenWrt Automated Build Release
+
+            **Build Date:** ${{ env.RELEASE_DATE }}
+
+            ### 🔄 Main Repository
+            **Repository:** [${{ env.REMOTE_REPOSITORY }}](https://github.com/${{ env.REMOTE_REPOSITORY }})
+            **Branch:** `${{ env.REMOTE_BRANCH }}`
+            **Commit:** `${{ needs.check_commits.outputs.latest_commit_sha }}`
+
+            ### 📦 NSS Packages
+            **Repository:** [${{ env.NSS_PACKAGES_REPOSITORY }}](https://github.com/${{ env.NSS_PACKAGES_REPOSITORY }})
+            **Branch:** `${{ env.NSS_PACKAGES_REPOSITORY_BRANCH }}`
+            **Commit:** `${{ needs.check_commits.outputs.nss_packages_repo_latest_commit_sha }}`
+
+            ### 📝 Build Information
+            - **Target:** [JDCloud RE-CS-03 后羿/哪吒]
+            - **Configuration:** [`${{ env.CONFIG_FILE }}`](${{ env.CONFIG_FILE }})
+
+            ### 📋 Notes
+            - Automated build triggered by ${{ github.event_name }}
+            - Previous releases are automatically cleaned up (keeping latest 5)
+            ---
+            _Generated by GitHub Actions 🤖_
+
+      - name: Clean up old releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          df -hT
+          gh api repos/${{ github.repository }}/releases --paginate --jq '.[5:10] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
+            day=$(echo "$tag" |cut -d'-' -f4)
+            if [ $day -ne "02" ] && [ $day -ne "09" ] && [ $day -ne "16" ] && [ $day -ne "24" ]; then
+              echo "Removing old release $tag ..."
+              gh api -X DELETE "repos/${{ github.repository }}/releases/$id" && gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/$tag" 2>/dev/null || true
+            fi
+          done
