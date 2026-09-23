@@ -69,7 +69,7 @@ jobs:
         run: |
           df -hT
           if [ -d "builder_repo/patches" ] && [ "$(ls -A builder_repo/patches 2>/dev/null)" ]; then
-            for patch in builder_repo/patches/*.patch; do
+            for patch in builder_repo/patches/*mainline.patch; do
               echo "Applying patch $patch ..."
               ls -al "$patch" && sha256sum "$patch"
               [ -f "$patch" ] && git apply --verbose "$patch"
