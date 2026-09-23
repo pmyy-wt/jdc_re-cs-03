@@ -879,66 +879,25 @@ index d3460db582..628faf38fd 100644
  yuncore,ax830)
  	migrate_radio 'platform/soc@0/b00a040.wifi1' 'platform/soc@0/b00a040.wifi'
 diff --git a/target/linux/qualcommax/ipq50xx/base-files/lib/upgrade/platform.sh b/target/linux/qualcommax/ipq50xx/base-files/lib/upgrade/platform.sh
-index 9d921f73b6..854f793df9 100644
+index 31c727e090..10a674220f 100644
 --- a/target/linux/qualcommax/ipq50xx/base-files/lib/upgrade/platform.sh
 +++ b/target/linux/qualcommax/ipq50xx/base-files/lib/upgrade/platform.sh
-@@ -121,6 +121,12 @@ platform_do_upgrade() {
+@@ -390,6 +390,18 @@ platform_do_upgrade() {
  	glinet,gl-b3000)
  		glinet_do_upgrade "$1"
  		;;
 +	jdcloud,re-cs-03)
-+		CI_KERNPART="0:HLOS_1"
-+		CI_ROOTPART="rootfs_1"
-+		CI_DATAPART="rootfs_data"
++		local cfgpart=$(find_mmc_part "0:BOOTCONFIG")
++		part_num="$(hexdump -e '1/1 "%01x|"' -n 1 -s 148 -C $cfgpart | cut -f 1 -d "|" | head -n1)"
++		if [ "$part_num" -eq "1" ]; then
++			CI_KERNPART="0:HLOS_1"
++			CI_ROOTPART="rootfs_1"
++		else
++			CI_KERNPART="0:HLOS"
++			CI_ROOTPART="rootfs"
++		fi
 +		emmc_do_upgrade "$1"
 +		;;
  	linksys,mr5500|\
  	linksys,mx2000|\
  	linksys,mx5500|\
-@@ -159,3 +165,12 @@ platform_do_upgrade() {
- 		;;
- 	esac
- }
-+
-+platform_copy_config(){
-+	case "$(board_name)" in
-+	jdcloud,re-cs-03)
-+		emmc_copy_config
-+		;;
-+	esac
-+	return 0;
-+}
-diff --git a/target/linux/qualcommax/patches-6.12/0821-remoteproc-qcom-wcss-populate-driver-data-for-IPQ5018.patch b/target/linux/qualcommax/patches-6.12/0821-remoteproc-qcom-wcss-populate-driver-data-for-IPQ5018.patch
-new file mode 100644
-index 0000000000..4dcee2cd3c
---- /dev/null
-+++ b/target/linux/qualcommax/patches-6.12/0821-remoteproc-qcom-wcss-populate-driver-data-for-IPQ5018.patch
-@@ -0,0 +1,28 @@
-+--- a/drivers/remoteproc/qcom_q6v5_wcss.c
-++++ b/drivers/remoteproc/qcom_q6v5_wcss.c
-+@@ -1218,10 +1218,25 @@ static const struct wcss_data wcss_qcs40
-+ 	.need_auto_boot = true,
-+ };
-+ 
-++static const struct wcss_data wcss_ipq5018_res_init = {
-++	.init_clock = ipq_init_clock,
-++	.q6_firmware_name = "IPQ5018/q6_fw.mdt",
-++	.m3_firmware_name = "IPQ5018/m3_fw.mdt",
-++	.crash_reason_smem = WCSS_CRASH_REASON,
-++	.aon_reset_required = true,
-++	.wcss_q6_reset_required = true,
-++	.bcr_reset_required = false,
-++	.ssr_name = "wcnss",
-++	.ops = &q6v5_wcss_ipq8074_ops,
-++	.requires_force_stop = true,
-++	.need_mem_protection = true,
-++};
-++
-+ static const struct of_device_id q6v5_wcss_of_match[] = {
-+ 	{ .compatible = "qcom,ipq8074-wcss-pil", .data = &wcss_ipq8074_res_init },
-+ 	{ .compatible = "qcom,ipq6018-wcss-pil", .data = &wcss_ipq6018_res_init },
-++	{ .compatible = "qcom,ipq5018-wcss-pil", .data = &wcss_ipq5018_res_init },
-+ 	{ .compatible = "qcom,qcs404-wcss-pil", .data = &wcss_qcs404_res_init },
-+ 	{ },
-+ };
-+ MODULE_DEVICE_TABLE(of, q6v5_wcss_of_match);
