@@ -1,4 +1,4 @@
-name: Build OpenWrt for specific target and release
+name: Build OpenWrt mainline for JDCloud RE-CS-03 and release
 
 permissions:
   contents: write
@@ -80,7 +80,7 @@ jobs:
         run: |
           df -hT
           #echo 'src-git custom https://github.com/kiddin9/kwrt-packages' >> feeds.conf.default
-          ./scripts/feeds update -a && ./scripts/feeds install -a -p luci && ./scripts/feeds install -a -p packages
+          ./scripts/feeds update -a && ./scripts/feeds install -a
           git clone https://github.com/Openwrt-Passwall/openwrt-passwall.git package/feeds/luci/luci-app-passwall
           git clone https://github.com/Openwrt-Passwall/openwrt-passwall2.git package/feeds/luci/luci-app-passwall2
           git clone https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git package/utils/passwall2
@@ -139,7 +139,7 @@ jobs:
         run: |
           df -hT
           make check -j$(nproc) FIXUP=1 V=s
-          make -j$(nproc) || make -j1 V=s  # Retry single-threaded on failure
+          make -j$(nproc) IGNORE_ERRORS="n m" || make -j1 V=s  # Retry single-threaded on failure
           tar cvzf bin/targets/qualcommax/ipq50xx/snapshots.tar.gz -C bin packages/aarch64_cortex-a53 targets/qualcommax/ipq50xx/packages
 
       - name: Upload artifacts
@@ -203,7 +203,7 @@ jobs:
           df -hT
           gh api repos/${{ github.repository }}/releases --paginate --jq '.[5:10] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             day=$(echo "$tag" |cut -d'-' -f4)
-            if [ $day -ne "02" ] && [ $day -ne "09" ] && [ $day -ne "16" ] && [ $day -ne "24" ]; then
+            if [ $day -ne "02" ] && [ $day -ne "09" ] && [ $day -ne "16" ] && [ $day -ne "24" ] && [[ $tag != *-nss ]]; then
               echo "Removing old release $tag ..."
               gh api -X DELETE "repos/${{ github.repository }}/releases/$id" && gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/$tag" 2>/dev/null || true
             fi
