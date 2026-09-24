@@ -1,4 +1,4 @@
-name: Build OpenWrt for specific target and release
+name: Build OpenWrt with NSS support for JDCloud RE-CS-03 and release
 
 permissions:
   contents: write
@@ -206,7 +206,7 @@ jobs:
           df -hT
           gh api repos/${{ github.repository }}/releases --paginate --jq '.[5:10] | .[] | "\(.id) \(.tag_name)"' | while read id tag; do
             day=$(echo "$tag" |cut -d'-' -f4)
-            if [ $day -ne "02" ] && [ $day -ne "09" ] && [ $day -ne "16" ] && [ $day -ne "24" ]; then
+            if [ $day -ne "02" ] && [ $day -ne "09" ] && [ $day -ne "16" ] && [ $day -ne "24" ] && [[ $tag = *-nss ]]; then
               echo "Removing old release $tag ..."
               gh api -X DELETE "repos/${{ github.repository }}/releases/$id" && gh api -X DELETE "repos/${{ github.repository }}/git/refs/tags/$tag" 2>/dev/null || true
             fi
