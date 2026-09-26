@@ -550,7 +550,7 @@ index 0000000000..3f2b4d845f
 +	};
 +
 +	chosen {
-+		bootargs-append = " swiotlb=1 coherent_pool=2M "fstools_partname_fallback_scan=1";
++		bootargs-append = " swiotlb=1 coherent_pool=2M fstools_partname_fallback_scan=1";
 +		stdout-path = "serial0:115200n8";
 +	};
 +
