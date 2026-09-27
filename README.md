@@ -13,7 +13,7 @@
 - [OpenWRT](https://github.com/openwrt/openwrt)官方源码，和设备专用补丁
 - 全功能OpenSSH
 - 编译全部KMOD安装包，确保安装软件不缺依赖，KMOD安装包在压缩包文件snapshots.tar.gz中
-- 没有NSS加速功能，其他功能都正常
+- 发布版本分别为没有NSS加速功能的主线版本和带NSS加速的[Kuncy7](https://github.com/kuncy7/openwrt-nss-edma)仓库版本
 
 ## 刷机
 
