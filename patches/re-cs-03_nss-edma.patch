@@ -498,7 +498,7 @@ new file mode 100644
 index 0000000000..3f2b4d845f
 --- /dev/null
 +++ b/target/linux/qualcommax/dts/ipq5018-re-cs-03.dts
-@@ -0,0 +1,390 @@
+@@ -0,0 +1,397 @@
 +/dts-v1/;
 +
 +#include "ipq5018.dtsi"
@@ -529,6 +529,18 @@ index 0000000000..3f2b4d845f
 +	chosen {
 +		bootargs-append = " swiotlb=1 coherent_pool=2M fstools_partname_fallback_scan=1";
 +		stdout-path = "serial0:115200n8";
++	};
++
++	reserved-memory {
++		q6_region_qcn6122_1: q6-region-qcn6122-1@4d200000 {
++			reg = <0x0 0x4d200000 0x0 0xd00000>;
++			no-map;
++		};
++
++		m3_dump_qcn6122_1: m3-dump-qcn6122-1@4df00000 {
++			reg = <0x0 0x4df00000 0x0 0x100000>;
++			no-map;
++		};
 +	};
 +
 +	keys {
@@ -869,25 +881,20 @@ index 0000000000..3f2b4d845f
 +	// IPQ5018
 +	status = "okay";
 +
-+	qcom,rproc = <&q6_wcss_pd1>;
-+	qcom,userpd-subsys-name = "q6v5_wcss_userpd1";
++	qcom,rproc = <&q6v5_wcss>;
 +	qcom,ath11k-calibration-variant = "JDC-RE-CS-03";
 +	qcom,ath11k-fw-memory-mode = <1>;
-+	qcom,bdf-addr = <0x4c400000>;
-+	//qcom,caldb-addr = <0x4c400000>;
-+	//qcom,m3-dump-addr = <0x4d100000>;
 +};
 +
 +&wifi1 {
 +	// QCN6102 5G
 +	status = "okay";
 +
-+	qcom,rproc = <&q6_wcss_pd2>;
-+	qcom,userpd-subsys-name = "q6v5_wcss_userpd2";
++	qcom,rproc = <&q6v5_wcss>;
 +	qcom,ath11k-calibration-variant = "JDC-RE-CS-03";
 +	qcom,ath11k-fw-memory-mode = <1>;
-+	qcom,bdf-addr = <0x4d100000>;
-+	qcom,m3-dump-addr = <0x4df00000>;
++	memory-region = <&q6_region_qcn6122_1>, <&q6_region_ipq5018>, <&m3_dump_qcn6122_1>;
++	memory-region-names = "q6-region", "m3-region", "m3-dump";
 +};
 diff --git a/target/linux/qualcommax/image/ipq50xx.mk b/target/linux/qualcommax/image/ipq50xx.mk
 index 95765d540e..136dc5377d 100644
