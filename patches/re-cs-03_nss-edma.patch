@@ -468,7 +468,7 @@ index 5e8ad2f332..505479645c 100644
   	nss_wifi_mesh_msg_callback_t msg_cb;
 - 	struct arvif_nss *nss = from_timer(nss, timer,mpp_expiry_timer);
 + 	struct arvif_nss *nss = timer_container_of(nss, timer,mpp_expiry_timer);
- @@ -2607,7 +2607,7 @@ static void ath11k_nss_mesh_vdev_free(st
+ @@ -2608,7 +2608,7 @@ static void ath11k_nss_mesh_vdev_free(st
   }
   #endif
 diff --git a/package/nss/nss-tools/files/nss-dwmac.defaults b/package/nss/nss-tools/files/nss-dwmac.defaults
