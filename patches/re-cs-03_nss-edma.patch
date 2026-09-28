@@ -471,29 +471,6 @@ index 5e8ad2f332..505479645c 100644
  @@ -2607,7 +2607,7 @@ static void ath11k_nss_mesh_vdev_free(st
   }
   #endif
-diff --git a/package/kernel/mac80211/patches/nss/ath11k/999-958-ath11k-add-missing-rx_desc_get_offset-for-ipq5018.patch b/package/kernel/mac80211/patches/nss/ath11k/999-958-ath11k-add-missing-rx_desc_get_offset-for-ipq5018.patch
-index 5c1cae2855..2e7c130efd 100644
---- a/package/kernel/mac80211/patches/nss/ath11k/999-958-ath11k-add-missing-rx_desc_get_offset-for-ipq5018.patch
-+++ b/package/kernel/mac80211/patches/nss/ath11k/999-958-ath11k-add-missing-rx_desc_get_offset-for-ipq5018.patch
-@@ -33,13 +33,17 @@ same #ifdef, so this is inert unless the 512M profile is selected.
- Reported-by: zmu (Redmi AX5400), georgem83 (Linksys MX2000)
- --- a/drivers/net/wireless/ath/ath11k/hw.c
- +++ b/drivers/net/wireless/ath/ath11k/hw.c
--@@ -1483,6 +1483,9 @@
-+@@ -1483,6 +1483,13 @@
-  	.rx_desc_mpdu_start_addr2 = ath11k_hw_ipq9074_rx_desc_mpdu_start_addr2,
-  	.get_ring_selector = ath11k_hw_ipq8074_get_tcl_ring_selector,
-  	.rx_desc_get_hal_mpdu_len = ath11k_hw_qcn9074_rx_desc_get_hal_mpdu_len,
- +#ifdef CPTCFG_ATH11K_MEM_PROFILE_512M
- +	.rx_desc_get_offset = ath11k_hw_qcn9074_rx_desc_get_offset,
- +#endif
-++	.rx_desc_get_mpdu_frame_ctl = ath11k_hw_qcn9074_rx_desc_get_mpdu_frame_ctl,
-++	.rx_desc_dot11_hdr_fields_valid = ath11k_hw_qcn9074_rx_desc_dot11_hdr_fields_valid,
-++	.rx_desc_get_dot11_hdr = ath11k_hw_qcn9074_rx_desc_get_dot11_hdr,
-++	.rx_desc_get_crypto_header = ath11k_hw_qcn9074_rx_desc_get_crypto_hdr,
-  };
-  
-  #define ATH11K_TX_RING_MASK_0 BIT(0)
 diff --git a/package/nss/nss-tools/files/nss-dwmac.defaults b/package/nss/nss-tools/files/nss-dwmac.defaults
 index 4cd02f2720..8e2fc57b3f 100644
 --- a/package/nss/nss-tools/files/nss-dwmac.defaults
