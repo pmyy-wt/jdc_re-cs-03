@@ -832,9 +832,9 @@ index 05bed90e27..d3581881f8 100644
 --- a/target/linux/qualcommax/ipq50xx/base-files/etc/board.d/02_network
 +++ b/target/linux/qualcommax/ipq50xx/base-files/etc/board.d/02_network
 @@ -19,6 +19,7 @@ ipq50xx_setup_interfaces()
- 	linksys,mx2000|\
  	linksys,mx5500|\
  	linksys,spnmx56|\
+ 	mercusys,mr80x-v2|\
 +	jdcloud,re-cs-03|\
  	xiaomi,ax6000)
  		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3" "wan"
@@ -883,7 +883,7 @@ index 31c727e090..10a674220f 100644
 --- a/target/linux/qualcommax/ipq50xx/base-files/lib/upgrade/platform.sh
 +++ b/target/linux/qualcommax/ipq50xx/base-files/lib/upgrade/platform.sh
 @@ -390,6 +390,18 @@ platform_do_upgrade() {
- 	glinet,gl-b3000)
+ 		remove_oem_ubi_volume wifi_fw
  		glinet_do_upgrade "$1"
  		;;
 +	jdcloud,re-cs-03)
