@@ -844,7 +844,7 @@ index c34aadf7d4..7ab58be257 100644
 --- a/target/linux/qualcommax/ipq50xx/base-files/etc/hotplug.d/firmware/11-ath11k-caldata
 +++ b/target/linux/qualcommax/ipq50xx/base-files/etc/hotplug.d/firmware/11-ath11k-caldata
 @@ -21,6 +21,10 @@ case "$FIRMWARE" in
- 		ath11k_patch_mac $(macaddr_add $(get_mac_label_dt) 3) 0
+ 		ath11k_patch_mac $(macaddr_add $(mtd_get_mac_binary "0:art" 0x6) 2) 0
  		ath11k_set_macflag
  		;;
 +	jdcloud,re-cs-03)
