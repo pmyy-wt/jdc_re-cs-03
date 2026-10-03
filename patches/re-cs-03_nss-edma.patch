@@ -416,28 +416,6 @@ x0cAiLPzIC%Wk4BF29yD1Kp9X5lmTTx8Bhk40cAiLPzIC%Wk4BF2Ih!?{|^?yL+bzl
 literal 0
 HcmV?d00001
 
-diff --git a/package/kernel/mac80211/patches/nss/ath11k/300-ath11k-nss-mesh-offload-support.patch b/package/kernel/mac80211/patches/nss/ath11k/300-ath11k-nss-mesh-offload-support.patch
-index 428e083b8a..f4e6bbaea4 100644
---- a/package/kernel/mac80211/patches/nss/ath11k/300-ath11k-nss-mesh-offload-support.patch
-+++ b/package/kernel/mac80211/patches/nss/ath11k/300-ath11k-nss-mesh-offload-support.patch
-@@ -2333,7 +2333,7 @@ Signed-off-by: Vasanthakumar Thiagarajan <vthiagar@codeaurora.org>
- +void ath11k_nss_mpp_timer_cb(struct timer_list *timer)
- +{
- +	nss_wifi_mesh_msg_callback_t msg_cb;
--+	struct arvif_nss *nss = from_timer(nss, timer,mpp_expiry_timer);
-++	struct arvif_nss *nss = timer_container_of(nss, timer,mpp_expiry_timer);
- +	struct ath11k_vif *arvif = container_of(nss, struct ath11k_vif, nss);
- +	struct ath11k_base *ab = arvif->ar->ab;
- +	LIST_HEAD(local_entry);
-@@ -2805,7 +2805,7 @@ Signed-off-by: Vasanthakumar Thiagarajan <vthiagar@codeaurora.org>
- +	LIST_HEAD(mpp_local_entry);
- +	nss_tx_status_t status;
- +
--+	del_timer_sync(&nss->mpp_expiry_timer);
-++	timer_delete_sync(&nss->mpp_expiry_timer);
- +
- +	spin_lock_bh(&ar->nss.dump_lock);
- +	list_splice_tail_init(&nss->mpath_dump, &mpath_local_entry);
 diff --git a/package/kernel/mac80211/patches/nss/ath11k/301-ath11k-nss-mcbc-exception.patch b/package/kernel/mac80211/patches/nss/ath11k/301-ath11k-nss-mcbc-exception.patch
 index ea279879b8..1e3626dd8d 100644
 --- a/package/kernel/mac80211/patches/nss/ath11k/301-ath11k-nss-mcbc-exception.patch
@@ -458,19 +436,6 @@ index ea279879b8..1e3626dd8d 100644
  +	break;
  +	case NSS_WIFI_VDEV_EXT_DATA_PKT_TYPE_4ADDR:
  +		if (eth_decap) {
-diff --git a/package/kernel/mac80211/patches/nss/ath11k/999-920-ath11k-add-kernel-6_12.patch b/package/kernel/mac80211/patches/nss/ath11k/999-920-ath11k-add-kernel-6_12.patch
-index 5e8ad2f332..505479645c 100644
---- a/package/kernel/mac80211/patches/nss/ath11k/999-920-ath11k-add-kernel-6_12.patch
-+++ b/package/kernel/mac80211/patches/nss/ath11k/999-920-ath11k-add-kernel-6_12.patch
-@@ -102,7 +102,7 @@
- +static void ath11k_nss_mpp_timer_cb(struct timer_list *timer)
-  {
-  	nss_wifi_mesh_msg_callback_t msg_cb;
-- 	struct arvif_nss *nss = from_timer(nss, timer,mpp_expiry_timer);
-+ 	struct arvif_nss *nss = timer_container_of(nss, timer,mpp_expiry_timer);
- @@ -2608,7 +2608,7 @@ static void ath11k_nss_mesh_vdev_free(st
-  }
-  #endif
 diff --git a/package/nss/nss-tools/files/nss-dwmac.defaults b/package/nss/nss-tools/files/nss-dwmac.defaults
 index 4cd02f2720..8e2fc57b3f 100644
 --- a/package/nss/nss-tools/files/nss-dwmac.defaults
@@ -932,9 +897,9 @@ index a7362c70f5..8c568bffb9 100644
 --- a/target/linux/qualcommax/ipq50xx/base-files/etc/board.d/02_network
 +++ b/target/linux/qualcommax/ipq50xx/base-files/etc/board.d/02_network
 @@ -23,6 +23,7 @@ ipq50xx_setup_interfaces()
- 	linksys,mx2000|\
  	linksys,mx5500|\
  	linksys,spnmx56|\
+ 	mercusys,mr80x-v2|\
 +	jdcloud,re-cs-03|\
  	xiaomi,ax6000)
  		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3" "wan"
@@ -978,3 +943,26 @@ index f1a94677df..82087994bf 100644
  linksys,mx2000|\
  yuncore,ax830)
  	migrate_radio 'platform/soc@0/b00a040.wifi1' 'platform/soc@0/b00a040.wifi'
+diff --git a/target/linux/qualcommax/ipq50xx/base-files/lib/upgrade/platform.sh b/target/linux/qualcommax/ipq50xx/base-files/lib/upgrade/platform.sh
+index 31c727e090..10a674220f 100644
+--- a/target/linux/qualcommax/ipq50xx/base-files/lib/upgrade/platform.sh
++++ b/target/linux/qualcommax/ipq50xx/base-files/lib/upgrade/platform.sh
+@@ -390,6 +390,18 @@ platform_do_upgrade() {
+ 		remove_oem_ubi_volume wifi_fw
+ 		glinet_do_upgrade "$1"
+ 		;;
++	jdcloud,re-cs-03)
++		local cfgpart=$(find_mmc_part "0:BOOTCONFIG")
++		part_num="$(hexdump -e '1/1 "%01x|"' -n 1 -s 148 -C $cfgpart | cut -f 1 -d "|" | head -n1)"
++		if [ "$part_num" -eq "1" ]; then
++			CI_KERNPART="0:HLOS_1"
++			CI_ROOTPART="rootfs_1"
++		else
++			CI_KERNPART="0:HLOS"
++			CI_ROOTPART="rootfs"
++		fi
++		emmc_do_upgrade "$1"
++		;;
+ 	linksys,mr5500|\
+ 	linksys,mx2000|\
+ 	linksys,mx5500|\
