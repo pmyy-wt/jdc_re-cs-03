@@ -81,6 +81,9 @@ jobs:
           df -hT
           #echo 'src-git custom https://github.com/kiddin9/kwrt-packages' >> feeds.conf.default
           ./scripts/feeds update -a && ./scripts/feeds install -a
+          unzip builder_repo/luci-app-accesscontrol.zip -d feeds/luci/applications
+          ./scripts/feeds update luci
+          ./scripts/feeds install luci-app-accesscontrol
           git clone https://github.com/Openwrt-Passwall/openwrt-passwall.git package/feeds/luci/luci-app-passwall
           git clone https://github.com/Openwrt-Passwall/openwrt-passwall2.git package/feeds/luci/luci-app-passwall2
           git clone https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git package/utils/passwall2
@@ -89,7 +92,6 @@ jobs:
           #git clone https://github.com/dgyangxf/luci-app-vlmcsd.git package/feeds/luci/luci-app-vlmcsd
           #git clone https://github.com/im-0/openwrt-package.vlmcsd.git package/utils/vlmcsd
           #git clone https://github.com/sbwml/openwrt-qBittorrent package/feeds/qBittorrent
-          unzip builder_repo/luci-app-accesscontrol.zip -d package/feeds/luci/applications
 
       - name: Setup configuration and custom files
         run: |
