@@ -82,6 +82,7 @@ jobs:
           #echo 'src-git custom https://github.com/kiddin9/kwrt-packages' >> feeds.conf.default
           ./scripts/feeds update -a && ./scripts/feeds install -a
           unzip builder_repo/luci-app-accesscontrol.zip -d feeds/luci/applications
+          mv feeds/luci/applications/luci-app-accesscontrol-main feeds/luci/applications/luci-app-accesscontrol
           ./scripts/feeds update luci 
           ./scripts/feeds install luci-app-accesscontrol
           git clone https://github.com/Openwrt-Passwall/openwrt-passwall.git package/feeds/luci/luci-app-passwall
