@@ -144,7 +144,7 @@ jobs:
           df -hT
           make check -j$(nproc) FIXUP=1 V=s
           make -j$(nproc) IGNORE_ERRORS="n m" || make -j1 V=s IGNORE_ERRORS="n m"  # Retry single-threaded on failure
-          tar cvzf bin/targets/qualcommax/ipq50xx/snapshots.tar.gz -C bin packages/aarch64_cortex-a53 targets/qualcommax/ipq50xx/packages
+          tar cvzf bin/targets/qualcommax/ipq50xx/snapshots.tar.gz -C bin packages/aarch64_cortex-a53 targets/qualcommax/ipq50xx/packages ../public-key.pem
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
