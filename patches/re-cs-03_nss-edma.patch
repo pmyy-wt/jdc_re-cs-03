@@ -28,8 +28,8 @@ index 1bca6bc934..98f64d5dc5 100644
 --- a/package/boot/uboot-tools/uboot-envtools/files/qualcommax_ipq50xx
 +++ b/package/boot/uboot-tools/uboot-envtools/files/qualcommax_ipq50xx
 @@ -36,6 +36,9 @@ yuncore,ax830|\
- yuncore,ax850)
- 	ubootenv_add_mtd "0:APPSBLENV" "0x0" "0x10000" "0x10000"
+ 	ubootenv_add_mtd "0:appsblenv" "0x0" "0x10000" "0x20000"
+ 	ubootenv_add_sys_mtd "bdata" "0x0" "0x10000" "0x20000"
  	;;
 +jdcloud,re-cs-03)
 +	ubootenv_add_uci_config "/dev/mmcblk0p10" "0x0" "0x40000" "0x10000"
