@@ -1049,9 +1049,9 @@ index 9761ef0560..777a8746b0 100644
 +		caldata_extract_mmc "0:ART" 0x1000 0x20000
 +		ath11k_remove_regdomain
 +		;;
- 	linksys,mr2000|\
- 	linksys,mr5500|\
- 	linksys,mx2000|\
+ 	h3c,magic-nx30|\
+ 	h3c,magic-rc3000-v1|\
+ 	h3c,magic-rc3000-v2|\
 @@ -113,6 +117,11 @@ case "$FIRMWARE" in
  		ath11k_remove_regdomain
  		ath11k_set_macflag
@@ -1096,6 +1096,6 @@ index 31c727e090..10a674220f 100644
 +		fi
 +		emmc_do_upgrade "$1"
 +		;;
- 	linksys,mr2000|\
- 	linksys,mr5500|\
- 	linksys,mx2000|\
+ 	h3c,magic-nx30|\
+ 	h3c,magic-rc3000-v1|\
+ 	h3c,magic-rc3000-v2|\
