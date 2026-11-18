@@ -1051,7 +1051,7 @@ index 9761ef0560..777a8746b0 100644
 +		;;
  	h3c,magic-bx54-eu|\
  	h3c,magic-nx30|\
- 	h3c,magic-rc3000-v1|\
+ 	h3c,magic-nx54|\
 @@ -113,6 +117,11 @@ case "$FIRMWARE" in
  		ath11k_remove_regdomain
  		ath11k_set_macflag
@@ -1098,4 +1098,4 @@ index 31c727e090..10a674220f 100644
 +		;;
  	h3c,magic-bx54-eu|\
  	h3c,magic-nx30|\
- 	h3c,magic-rc3000-v1|\
+ 	h3c,magic-nx54|\
